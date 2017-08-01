@@ -1,4 +1,4 @@
-#Install the BigQuery Client Library
+## Install the BigQuery Client Library
 
 If you are using Maven, add this to your pom.xml file:
 ```
@@ -13,9 +13,9 @@ If you are using Gradle, add this to your dependencies:
 
 ```compile group: 'com.google.cloud', name: 'google-cloud-bigquery', version: '0.20.1-beta' ```
 
-#Using the client library
+## Using the client library
 
 The following example shows how to use the client library. To run it on your local workstation you must first install the Google Cloud SDK and authenticate by running the following command:
 
-[gcloud auth application-default login]
+``` gcloud auth application-default login```
 

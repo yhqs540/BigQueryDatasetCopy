@@ -1,16 +1,20 @@
 package com.google.cloud.pso.bigquery;
 
+import com.google.appengine.repackaged.com.google.common.collect.Lists;
 import com.google.cloud.WaitForOption;
 import com.google.cloud.bigquery.*;
 import org.apache.beam.sdk.Pipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Iterator;
-import java.util.List;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.cloud.bigquery.BigQuery.JobField.STATUS;
+import static java.util.Arrays.asList;
 
 /**
  * Created by roderickyao on 8/2/17.
@@ -18,6 +22,7 @@ import static com.google.cloud.bigquery.BigQuery.JobField.STATUS;
 public class RenameBQSchemaFields {
     private static final Logger LOG = LoggerFactory.getLogger(RenameBQSchemaFields.class);
 
+    //Parameter: property file that contains the schema matching. Example is schema.properties file.
     public static void main(String[] args) throws InterruptedException {
         // Instantiates a client
         BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
@@ -26,6 +31,8 @@ public class RenameBQSchemaFields {
         String datasetName = "DAT01lLab";
         String tableName = "accounts";
         String newTableName = "NEWaccounts";
+
+
 
         String oldFieldsString="";
         String newFieldsString="";
@@ -82,6 +89,59 @@ public class RenameBQSchemaFields {
         }else
             LOG.info("Table rename completed!");
 
+    }
+
+    //Load schema mapping from a properties file. We need to preserve insert order the schema fields
+    //Output: LinkedHashMap<String, String>
+    private static LinkedHashMap<String, String> loadSchema(String propertyFileName) throws IOException{
+        LinkedHashMap<String, String> propertyMap=new LinkedHashMap<>();
+        FileReader reader=new FileReader(propertyFileName);
+        Properties properties=new Properties();
+        properties.load(reader);
+
+        Enumeration keys=properties.keys();
+        while(keys.hasMoreElements()){
+            String key=(String)keys.nextElement();
+            propertyMap.put(key, properties.getProperty(key));
+        }
+
+        return  propertyMap;
+    }
+
+    //Get each field's information from BigQuery and copy metadata to new schema
+    private static LinkedHashMap<Field, Field> enrichSchema(LinkedHashMap<String, String> schemaMap, Table oldTable, BigQuery bigQueryClient) throws Exception{
+        Schema schema=oldTable.getDefinition().getSchema();
+        List<Field> fields=schema.getFields();
+
+        List<String> newFields = Arrays.asList(schemaMap.values().toArray(new String[0]));
+
+        for (Field field: schema.getFields()){
+            Field.Builder fieldBuilder=Field.newBuilder(field.getName(),field.getType());
+            fieldBuilder.setDescription(field.getDescription());
+            fieldBuilder.setMode(field.getMode());
+            fieldBuilder.setName(field.getName()+"AAA");
+            newSchemaBuilder.addField(fieldBuilder.build());
+        }
+    }
+
+    //Validate input fields match all fields from BigQuery to avoid user error
+    private static boolean validateOldSchema(Schema oldSchema, List<String> fields){
+        if(oldSchema == null){
+            return false;
+        }
+
+        List<Field> bqFields = oldSchema.getFields();
+
+        if(bqFields.size() != fields.size())
+            return false;
+
+        for(int i=0;i<bqFields.size();i++){
+            if (!bqFields.get(i).getName().contentEquals(fields.get(i))){
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static boolean copyTable(Table sourceTable, String destDataset, String destTable, int timeOutMinutes) {

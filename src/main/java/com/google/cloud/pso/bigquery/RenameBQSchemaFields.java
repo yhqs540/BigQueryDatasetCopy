@@ -27,7 +27,6 @@ public class RenameBQSchemaFields {
         String tableName = "accounts";
         String newTableName = "NEWaccounts";
 
-        //List of fields
         String oldFieldsString="";
         String newFieldsString="";
 
@@ -38,6 +37,7 @@ public class RenameBQSchemaFields {
             return;
         }
 
+        //Constructing a new table with a new Schema
         TableId newTableId=TableId.of(datasetName, newTableName);
         Table table=bigquery.getTable(TableId.of(datasetName,tableName));
 
@@ -45,6 +45,7 @@ public class RenameBQSchemaFields {
         Schema.Builder newSchemaBuilder=Schema.newBuilder();
         for (Field field: schema.getFields()
                 ){
+            //Rename the fields. Also, you should pay attention to the order of the fields.
             oldFieldsString += field.getName() +",";
             newFieldsString += field.getName()+"AAA,";
 
@@ -54,16 +55,13 @@ public class RenameBQSchemaFields {
             fieldBuilder.setName(field.getName()+"AAA");
             newSchemaBuilder.addField(fieldBuilder.build());
         }
-
         oldFieldsString=oldFieldsString.substring(0,oldFieldsString.lastIndexOf(","));
         newFieldsString=newFieldsString.substring(0,newFieldsString.lastIndexOf(","));
 
         Schema newSchema=newSchemaBuilder.build();
         TableDefinition newTableDefinition=StandardTableDefinition.of(newSchema);
 
-        //Table newTable = bigquery.create(TableInfo.of(newTableId, newTableDefinition));
-
-        // Copy data from source to new table
+        // Copy data from source to new table by using INSERT query
         QueryRequest queryRequest =
                 QueryRequest.newBuilder("INSERT " + datasetName+"." + newTableName +
                         " (" + newFieldsString + ") " +

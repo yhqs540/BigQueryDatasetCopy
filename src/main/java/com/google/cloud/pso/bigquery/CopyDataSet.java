@@ -67,8 +67,8 @@ public class CopyDataSet {
         BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
 
         // The name for the new dataset
-        String datasetName = "DAT01lLab";
-        String newDatasetName = "DAT01LabCopy";
+        String datasetName = "pso_data_demos";
+        String newDatasetName = "pso_data_demos_copy";
 
         //Validate source dataset exist
         Dataset dataset = bigquery.getDataset(datasetName);
